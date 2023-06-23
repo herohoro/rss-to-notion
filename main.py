@@ -5,7 +5,8 @@ import time
 import datetime
 
 def addContent(title, date, link):
-    
+    os.environ['TOKEN'] =''
+    os.environ['DATABASE_ID'] = ''
     token = os.getenv('TOKEN')
     databaseId = os.getenv('DATABASE_ID')
 
@@ -44,7 +45,7 @@ def addContent(title, date, link):
     response = requests.request("POST", notionUrl, headers=headers, data=data)
     print(response)
 
-url = 'https://www.happyou.info/fs/gen.php?u=2083537882&p=1344155542'
+url = 'https://www.happyou.info/fs/gen.php?u=2083537882&p=-437531470'
 
 def job(url):
     elements = feedparser.parse(url)
@@ -56,7 +57,7 @@ def job(url):
         link  = entry.link       
         addContent(title, date, link)
 
-
+        # break
         time.sleep(1)
         
 job(url)
