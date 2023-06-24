@@ -6,6 +6,7 @@ import feedparser
 import datetime
 import sqlite3
 from sqlite3 import Error
+from dotenv import load_dotenv
 
 # データベース接続を作成します。
 def create_connection():
@@ -50,9 +51,10 @@ def add_content_to_db(conn, title, link):
 
 def addContent(title, date, link, conn):
     if add_content_to_db(conn, title, link):
+        load_dotenv()
 
-        os.environ['TOKEN'] =''
-        os.environ['DATABASE_ID'] = ''
+        # os.environ['TOKEN'] =''
+        # os.environ['DATABASE_ID'] = ''
 
         token = os.getenv('TOKEN')
         databaseId = os.getenv('DATABASE_ID')
