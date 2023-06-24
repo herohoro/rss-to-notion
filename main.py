@@ -94,7 +94,7 @@ def addContent(title, date, link, conn):
         response = requests.request("POST", notionUrl, headers=headers, data=data)
         print(response)
 
-url = 'https://www.happyou.info/fs/gen.php?u=2083537882&p=-437531470'
+url = 'https://ent.sbs.co.kr/news/xml/RSSFeed.do'
 
 def job(url):
     conn = create_connection()
@@ -105,7 +105,7 @@ def job(url):
         for entry in elements.entries:
             title = entry.title
             date = entry.published
-            date = datetime.datetime.strptime(str(date), '%a, %d %b %Y %H:%M:%S +0000').strftime('%Y-%m-%d %H:%M')
+            date = datetime.datetime.strptime(str(date), '%a, %d %b %Y %H:%M:%S +0900').strftime('%Y-%m-%d %H:%M')
             link  = entry.link       
             addContent(title, date, link, conn)
             time.sleep(1)
