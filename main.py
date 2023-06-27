@@ -3,7 +3,6 @@ import time
 import json
 import requests
 import feedparser
-import datetime
 from dateutil import parser
 from urllib.parse import urlparse
 import sqlite3
@@ -53,58 +52,61 @@ def add_content_to_db(conn, source, title, link):
         return False
 
 def addContent(source, title, date, link, conn):
-    if add_content_to_db(conn, source, title, link):
-        load_dotenv()
+    try:
+        if add_content_to_db(conn, source, title, link):
+            load_dotenv()
 
-        # os.environ['TOKEN'] =''
-        # os.environ['DATABASE_ID'] = ''
+            # os.environ['TOKEN'] =''
+            # os.environ['DATABASE_ID'] = ''
 
-        token = os.getenv('TOKEN')
-        databaseId = os.getenv('DATABASE_ID')
+            token = os.getenv('TOKEN')
+            databaseId = os.getenv('DATABASE_ID')
 
-        headers = {
-            "Authorization": "Bearer " + token,
-            "Content-Type": "application/json",
-            "Notion-Version": "2022-06-28"
-        }
-        notionUrl = 'https://api.notion.com/v1/pages'
-        addData = {
-                        "parent": { "database_id": databaseId },
-            "properties": {
-                "source": {
-                    "rich_text": [
-                        {
-                            "text": {
-                                "content": source
+            headers = {
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json",
+                "Notion-Version": "2022-06-28"
+            }
+            notionUrl = 'https://api.notion.com/v1/pages'
+            addData = {
+                            "parent": { "database_id": databaseId },
+                "properties": {
+                    "source": {
+                        "rich_text": [
+                            {
+                                "text": {
+                                    "content": source
+                                }
                             }
-                        }
-                    ]
-                },
-                "title": {
-                    "title": [
-                        {
-                            "text": {
-                                "content": title
+                        ]
+                    },
+                    "title": {
+                        "title": [
+                            {
+                                "text": {
+                                    "content": title
+                                }
                             }
-                        }
-                    ]
-                },
-                "date": {
-                    "date": 
-                        {
-                            "start": date
-                        }
-                },
-                "link" : {
-                    "url": link
+                        ]
+                    },
+                    "date": {
+                        "date": 
+                            {
+                                "start": date
+                            }
+                    },
+                    "link" : {
+                        "url": link
+                    }
                 }
             }
-        }
-        
-        data = json.dumps(addData)
+            
+            data = json.dumps(addData)
 
-        response = requests.request("POST", notionUrl, headers=headers, data=data)
-        print(response)
+            response = requests.request("POST", notionUrl, headers=headers, data=data)
+            print(response)
+    except Exception as e:
+        print(f"Error occurred while adding content to Notion: {e}")
 
 def job(urls):
     conn = create_connection()
