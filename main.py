@@ -4,6 +4,8 @@ import json
 import requests
 import feedparser
 import datetime
+from dateutil import parser
+from urllib.parse import urlparse
 import sqlite3
 from sqlite3 import Error
 from dotenv import load_dotenv
@@ -24,6 +26,7 @@ def create_table(conn):
     try:
         sql_create_table = """ CREATE TABLE IF NOT EXISTS articles (
                                     id integer PRIMARY KEY,
+                                    source text NOT NULL,
                                     title text NOT NULL,
                                     link text NOT NULL
                                 ); """
@@ -33,24 +36,24 @@ def create_table(conn):
         print(e)
 
 # RSSフィードのエントリをデータベースに追加します。
-def add_content_to_db(conn, title, link):
-    sql_check_article = """ SELECT * FROM articles WHERE title=? AND link=? """
+def add_content_to_db(conn, source, title, link):
+    sql_check_article = """ SELECT * FROM articles WHERE source=? AND title=? AND link=? """
     cur = conn.cursor()
-    cur.execute(sql_check_article, (title, link))
+    cur.execute(sql_check_article, (source, title, link))
     rows = cur.fetchall()
 
     if len(rows) == 0: # この記事がまだデータベースに存在しない場合
-        sql_insert_article = ''' INSERT INTO articles(title,link)
-                                 VALUES(?,?) '''
-        cur.execute(sql_insert_article, (title, link))
+        sql_insert_article = ''' INSERT INTO articles(source, title, link)
+                                 VALUES(?,?,?) '''
+        cur.execute(sql_insert_article, (source, title, link))
         conn.commit()
         return True
     else:
         print('This entry already exists.')
         return False
 
-def addContent(title, date, link, conn):
-    if add_content_to_db(conn, title, link):
+def addContent(source, title, date, link, conn):
+    if add_content_to_db(conn, source, title, link):
         load_dotenv()
 
         # os.environ['TOKEN'] =''
@@ -66,8 +69,17 @@ def addContent(title, date, link, conn):
         }
         notionUrl = 'https://api.notion.com/v1/pages'
         addData = {
-            "parent": { "database_id": databaseId },
+                        "parent": { "database_id": databaseId },
             "properties": {
+                "source": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": source
+                            }
+                        }
+                    ]
+                },
                 "title": {
                     "title": [
                         {
@@ -94,23 +106,35 @@ def addContent(title, date, link, conn):
         response = requests.request("POST", notionUrl, headers=headers, data=data)
         print(response)
 
-url = 'https://ent.sbs.co.kr/news/xml/RSSFeed.do'
-
-def job(url):
+def job(urls):
     conn = create_connection()
     if conn is not None:
         create_table(conn)
-        elements = feedparser.parse(url)
-
-        for entry in elements.entries:
-            title = entry.title
-            date = entry.published
-            date = datetime.datetime.strptime(str(date), '%a, %d %b %Y %H:%M:%S +0900').strftime('%Y-%m-%d %H:%M')
-            link  = entry.link       
-            addContent(title, date, link, conn)
-            time.sleep(1)
-
-        conn.close()
         
-job(url)
+        for url in urls:
+            try:
+                source = urlparse(url).netloc  # URLからホスト名を抽出します
+                elements = feedparser.parse(url)
+
+
+            
+                for i, entry in enumerate(elements.entries):
+                    if i >= 10:  # 10件以上処理されたらループを抜けます
+                        break
+
+                    title = entry.title
+                    date = entry.published
+                    date = parser.parse(date).strftime('%Y-%m-%d %H:%M')
+                    link  = entry.link       
+
+                    addContent(source, title, date, link, conn)
+                    time.sleep(1)
+            except Exception as e:
+                            print(f"Error occurred while parsing RSS feed from {url}: {e}")
+            finally:
+                conn.close()
+    print("===== ❤(ӦｖӦ｡)さいごまで終わった〜 =====")  # プログラムが成功した時に表示されるメッセージ
+## 登録したいRSSフィードのURLをここに入れてね
+urls = ['https://ent.sbs.co.kr/news/xml/RSSFeed.do', 'https://learningenglish.voanews.com/api/zj-oqqeyviqq']
+job(urls)
 
