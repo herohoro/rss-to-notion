@@ -121,8 +121,8 @@ def job(urls):
 
             
                 for i, entry in enumerate(elements.entries):
-                    if i >= 10:  # 10件以上処理されたらループを抜けます
-                        break
+                    # if i >= 10:  # 10件以上処理されたらループを抜けます
+                    #     break
 
                     title = entry.title
                     date = entry.published
