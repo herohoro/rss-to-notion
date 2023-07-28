@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 import feedparser
 import time
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
+import pytz
 
 def get_feeds():
     load_dotenv()  # take environment variables from .env.
@@ -85,21 +87,22 @@ def addContent(source, title, date, link):
                 pprint(response)
                 #  print(NOTION_DATABASE_ID)
     
-def parse_feeds(urls): 
-    for url in urls:
-        
-        source = urlparse(url).netloc  # URLからホスト名を抽出します
+def parse_feeds(feeds):
+    for url in feeds:
+        source = urlparse(url).netloc
         elements = feedparser.parse(url)
 
-        for i, entry in enumerate(elements.entries):
+        now_utc = datetime.utcnow().replace(tzinfo=pytz.utc)  # get current time in UTC and set timezone info
+        threshold_time = now_utc - timedelta(hours=24)  # calculate 24 hours ago
 
+        for i, entry in enumerate(elements.entries):
             title = entry.title
             date = entry.published
-            date = parser.parse(date).strftime('%Y-%m-%d %H:%M')
-            link  = entry.link       
+            date_utc = parser.parse(date).astimezone(pytz.utc)  # make sure the date is in UTC
 
-            addContent(source, title, date, link)
-            # pprint({'source': source, 'title': title, 'date': date, 'link': link})
+            if date_utc > threshold_time:  # only add content if it was published in the last 24 hours
+                link  = entry.link
+                addContent(source, title, date, link)
 
             time.sleep(1)
 
