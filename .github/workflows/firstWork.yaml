@@ -1,4 +1,4 @@
-name: Run Python Script
+name: FirstRun Python Script
 
 on:
   workflow_dispatch: #手動実行

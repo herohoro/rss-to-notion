@@ -1,4 +1,4 @@
-name: Run Python Script
+name: Schedule Run Python Script
 
 on:
   schedule: #定期実行
