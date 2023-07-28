@@ -1,8 +1,7 @@
 name: Run Python Script
 
 on:
-  schedule: #定期実行
-    - cron: "0 20 * * *" # Runs every day at 20:00 UTC, which is 5:00 in Japan time next day
+  workflow_dispatch: #手動実行
 
 jobs:
   build:
@@ -22,7 +21,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Script
-        run: python notion.py # Replace with your script's name
+        run: python first-notion.py # Replace with your script's name
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           FEED_DB_ID: ${{ secrets.FEED_DB_ID }}
