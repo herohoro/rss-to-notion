@@ -37,6 +37,8 @@ def addContent(source, title, date, link):
             NOTION_ACCESS_TOKEN = os.getenv("NOTION_TOKEN")
             NOTION_DATABASE_ID = os.getenv("READ_DB_ID")
 
+            date_iso = date.isoformat()
+
             headers = {
                 "Authorization": "Bearer " + NOTION_ACCESS_TOKEN,
                 "Content-Type": "application/json",
@@ -67,7 +69,7 @@ def addContent(source, title, date, link):
                     "date": {
                         "date": 
                             {
-                                "start": date
+                                "start": date_iso
                             }
                     },
                     "link" : {
@@ -78,14 +80,15 @@ def addContent(source, title, date, link):
             
             data = json.dumps(addData)
 
-            
+
             try:
                 response = requests.request("POST", notionUrl, headers=headers, data=data, timeout=5)
+                response.raise_for_status()  # Raise an HTTPError if the response contains an unsuccessful HTTP status code.
             except requests.exceptions.RequestException as e:
                 print(f"An error occurred: {e}")
+                print(response.text)  # Print the server's response message.
             else:
                 pprint(response)
-                #  print(NOTION_DATABASE_ID)
     
 def parse_feeds(feeds):
     for url in feeds:
@@ -98,11 +101,12 @@ def parse_feeds(feeds):
         for i, entry in enumerate(elements.entries):
             title = entry.title
             date = entry.published
-            date_utc = parser.parse(date).astimezone(pytz.utc)  # make sure the date is in UTC
+            date = parser.parse(date).astimezone(pytz.utc)  # make sure the date is in UTC            
 
-            if date_utc > threshold_time:  # only add content if it was published in the last 24 hours
+            if date > threshold_time:  # only add content if it was published in the last 24 hours
                 link  = entry.link
                 addContent(source, title, date, link)
+                # print(f"Added {title} from {source} to Notion")
 
             time.sleep(1)
 
