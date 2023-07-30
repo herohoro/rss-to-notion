@@ -86,7 +86,6 @@ def addContent(source, title, date, link):
                 response.raise_for_status()  # Raise an HTTPError if the response contains an unsuccessful HTTP status code.
             except requests.exceptions.RequestException as e:
                 print(f"An error occurred: {e}")
-                print(response.text)  # Print the server's response message.
             else:
                 pprint(response)
     
