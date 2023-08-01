@@ -8,3 +8,5 @@ urllib3==2.0.3
 python-dateutil
 python-dotenv
 pytz==2023.3
+beautifulsoup4
+
