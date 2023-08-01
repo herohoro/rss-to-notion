@@ -7,6 +7,9 @@ from urllib.parse import urlparse
 import feedparser
 import time
 from dotenv import load_dotenv
+import requests
+from bs4 import BeautifulSoup
+
 
 def get_feeds():
     load_dotenv()  # take environment variables from .env.
@@ -29,7 +32,7 @@ def get_feeds():
     # pprint(urls)
     return urls
 
-def addContent(source, title, date, link):
+def addContent(source, title, date, link,image_url):
             load_dotenv()
             
             NOTION_ACCESS_TOKEN = os.getenv("NOTION_TOKEN")
@@ -70,21 +73,54 @@ def addContent(source, title, date, link):
                     },
                     "link" : {
                         "url": link
-                    }
-                }
-            }
+                    },
+                    
+                },
+                "children": [
+                     {
+                        "type": 'image',
+                        "image": {
+                            "type": 'external',
+                            "external": {
+                                "url": image_url,
+                            },
+                        },
+                    },
+                ]
             
+            }
             data = json.dumps(addData)
 
             
             try:
                 response = requests.request("POST", notionUrl, headers=headers, data=data, timeout=5)
+                # pprint(data)
+                response.raise_for_status()
             except requests.exceptions.RequestException as e:
                 print(f"An error occurred: {e}")
+                print(f"Response status code: {response.status_code}")
+                print(f"Response content: {response.content}")
             else:
-                pprint(response)
+                # pprint(response)
                 #  print(NOTION_DATABASE_ID)
+                print("Request successful")
     
+def get_image_url(entry):
+    thumbnail = entry.get("media_thumbnail")
+    if thumbnail:
+        return thumbnail[0]["url"]
+    else:
+        # <media:thumbnail> タグがない場合は、スクレイピングして og:image メタタグから画像URLを取得する
+        link = entry.get("link")
+        if link:
+            response = requests.get(link)
+            if response.ok:
+                soup = BeautifulSoup(response.content, "html.parser")
+                og_image_tag = soup.find("meta", property="og:image")
+                if og_image_tag and og_image_tag.get("content"):
+                    return og_image_tag["content"]
+    return None
+
 def parse_feeds(urls): 
     for url in urls:
         
@@ -96,10 +132,11 @@ def parse_feeds(urls):
             title = entry.title
             date = entry.published
             date = parser.parse(date).strftime('%Y-%m-%d %H:%M')
-            link  = entry.link       
+            link  = entry.link
+            image_url = get_image_url(entry)
 
-            addContent(source, title, date, link)
-            # pprint({'source': source, 'title': title, 'date': date, 'link': link})
+            addContent(source, title, date, link, image_url)
+            # pprint({'source': source, 'title': title, 'date': date, 'link': link, 'image_url': image_url})
 
             time.sleep(1)
 

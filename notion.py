@@ -9,6 +9,9 @@ import time
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import pytz
+import requests
+from bs4 import BeautifulSoup
+
 
 def get_feeds():
     load_dotenv()  # take environment variables from .env.
@@ -31,7 +34,7 @@ def get_feeds():
     # pprint(urls)
     return urls
 
-def addContent(source, title, date, link):
+def addContent(source, title, date, link,image_url):
             load_dotenv()
             
             NOTION_ACCESS_TOKEN = os.getenv("NOTION_TOKEN")
@@ -74,8 +77,20 @@ def addContent(source, title, date, link):
                     },
                     "link" : {
                         "url": link
-                    }
-                }
+                    },
+
+                },
+                 "children": [
+                     {
+                        "type": 'image',
+                        "image": {
+                            "type": 'external',
+                            "external": {
+                                "url": image_url,
+                            },
+                        },
+                    },
+                ]
             }
             
             data = json.dumps(addData)
@@ -86,8 +101,28 @@ def addContent(source, title, date, link):
                 response.raise_for_status()  # Raise an HTTPError if the response contains an unsuccessful HTTP status code.
             except requests.exceptions.RequestException as e:
                 print(f"An error occurred: {e}")
+                print(f"Response status code: {response.status_code}")
+                print(f"Response content: {response.content}")
             else:
-                pprint(response)
+                # pprint(response)
+                print("Request successful")
+
+def get_image_url(entry):
+    thumbnail = entry.get("media_thumbnail")
+    if thumbnail:
+        return thumbnail[0]["url"]
+    else:
+        # <media:thumbnail> タグがない場合は、スクレイピングして og:image メタタグから画像URLを取得する
+        link = entry.get("link")
+        if link:
+            response = requests.get(link)
+            if response.ok:
+                soup = BeautifulSoup(response.content, "html.parser")
+                og_image_tag = soup.find("meta", property="og:image")
+                if og_image_tag and og_image_tag.get("content"):
+                    return og_image_tag["content"]
+    return None
+
     
 def parse_feeds(feeds):
     for url in feeds:
@@ -104,7 +139,8 @@ def parse_feeds(feeds):
 
             if date > threshold_time:  # only add content if it was published in the last 24 hours
                 link  = entry.link
-                addContent(source, title, date, link)
+                image_url = get_image_url(entry)
+                addContent(source, title, date, link, image_url)
                 # print(f"Added {title} from {source} to Notion")
 
             time.sleep(1)
